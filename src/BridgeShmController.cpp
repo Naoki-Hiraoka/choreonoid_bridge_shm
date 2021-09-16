@@ -52,12 +52,12 @@ class BridgeShmController : public SimpleController
       }
       s_shm->motor_num[i] = 1;
       s_shm->controlmode[i] = SERVOMODE_POSITION;
-      s_shm->is_servo_on[i] = 1; // 1: servoon start. 0: servooff start.
+      s_shm->is_servo_on[i] = 0; // 1: servoon start. 0: servooff start.
       s_shm->servo_on[i] = 0;
       s_shm->servo_off[i] = 0;
       s_shm->torque0[i] = 0;
-      s_shm->servo_state[0][i] = 0x0000; //0x0000: servoon start. 0x0800: servooff start
-      s_shm->loopback[i] = 0; // 0: servoon start. 1: servooff start.
+      s_shm->servo_state[0][i] = 0x0800; //0x0000: servoon start. 0x0800: servooff start
+      s_shm->loopback[i] = 1; // 0: servoon start. 1: servooff start.
       s_shm->joint_enable[i] = 1;
       s_shm->joint_offset[i] = 0;
     }
