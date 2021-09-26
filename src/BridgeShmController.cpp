@@ -131,7 +131,6 @@ class BridgeShmController : public SimpleController
       s_shm->cur_torque[i] = robot->joint(i)->u();
       s_shm->motor_temp[0][i] = 0.0;
       s_shm->motor_outer_temp[0][i] = 0.0;
-      s_shm->motor_current[0][i] = 0.0;
       s_shm->motor_output[0][i] = 0.0;
       s_shm->board_vin[0][i] = 0.0;
       s_shm->board_vdd[0][i] = 0.0;
@@ -211,6 +210,9 @@ class BridgeShmController : public SimpleController
         joint->u() = 0;
       }
 
+      s_shm->cur_torque[i] = robot->joint(i)->u();
+      s_shm->motor_current[0][i] = robot->joint(i)->u();
+
       qrefprev[i] = qref;
       qactprev[i] = qact;
     }
@@ -255,7 +257,7 @@ public:
       Link* joint = robot->joint(i);
       joint->setActuationMode(Link::JOINT_TORQUE);
       io->enableOutput(joint);
-      io->enableInput(joint, JOINT_DISPLACEMENT | JOINT_VELOCITY | JOINT_FORCE);
+      io->enableInput(joint, JOINT_DISPLACEMENT | JOINT_VELOCITY);
       qrefprev.push_back(joint->q());
       qactprev.push_back(joint->q());
     }
