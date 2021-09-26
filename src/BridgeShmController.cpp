@@ -23,7 +23,6 @@ class BridgeShmController : public SimpleController
   std::vector<double> hardware_tqpgain;
   std::vector<double> hardware_tqdgain;
 
-  std::vector<double> qrefprev;
   std::vector<double> qactprev;
 
   struct servo_shm *s_shm;
@@ -188,7 +187,7 @@ class BridgeShmController : public SimpleController
       double qact = joint->q();
       if ( s_shm->is_servo_on[i] == 1 && s_shm->loopback[i] == 0 ) {
         double dqact = (qact - qactprev[i]) / dt;
-        double dqref = (qref - qrefprev[i]) / dt;
+        double dqref = s_shm->ref_vel[i];
         float limited_pgain = (s_shm->pgain[i] < 0.0) ? 0.0 : s_shm->pgain[i];
         float limited_dgain = (s_shm->dgain[i] < 0.0) ? 0.0 : s_shm->dgain[i];
         float limited_torque_pgain = (s_shm->torque_pgain[i] < 0.0) ? 0.0 : s_shm->torque_pgain[i];
@@ -213,7 +212,6 @@ class BridgeShmController : public SimpleController
       s_shm->cur_torque[i] = robot->joint(i)->u();
       s_shm->motor_current[0][i] = robot->joint(i)->u();
 
-      qrefprev[i] = qref;
       qactprev[i] = qact;
     }
   }
@@ -258,7 +256,6 @@ public:
       joint->setActuationMode(Link::JOINT_TORQUE);
       io->enableOutput(joint);
       io->enableInput(joint, JOINT_DISPLACEMENT | JOINT_VELOCITY);
-      qrefprev.push_back(joint->q());
       qactprev.push_back(joint->q());
     }
 
