@@ -70,11 +70,7 @@ class BridgeShmController : public SimpleController
         }
 
       next:
-        io->os() << "joint: " << i;
-        io->os() << ", P: " << hardware_pgain[i];
-        io->os() << ", D: " << hardware_dgain[i];
-        io->os() << ", tqP: " << hardware_tqpgain[i];
-        io->os() << ", tqD: " << hardware_tqdgain[i] << std::endl;
+        io->os() << "joint: " << i << ", P: " << hardware_pgain[i] << ", D: " << hardware_dgain[i] << ", tqP: " << hardware_tqpgain[i] << ", tqD: " << hardware_tqdgain[i] << std::endl;
       }
       gain.close();
       if (i != robot->numJoints()) {
