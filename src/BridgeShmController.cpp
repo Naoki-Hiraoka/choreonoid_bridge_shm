@@ -93,19 +93,19 @@ class BridgeShmController : public SimpleController
     {
       const DeviceList<RateGyroSensor>& rateGyroSensors = robot->devices();
       for(int i=0; i < rateGyroSensors.size(); i++){
-        for (int j=0; j<3; j++) s_shm->body_omega[i][j] = rateGyroSensors[i]->w()[j];
+        for (int j=0; j<3; j++) s_shm->body_omega[rateGyroSensors[i]->id()][j] = rateGyroSensors[i]->w()[j];
       }
     }
     {
       const DeviceList<AccelerationSensor>& accelerationSensors = robot->devices();
       for(int i=0; i < accelerationSensors.size(); i++){
-        for (int j=0; j<3; j++) s_shm->body_acc[i][j] = accelerationSensors[i]->dv()[j];
+        for (int j=0; j<3; j++) s_shm->body_acc[accelerationSensors[i]->id()][j] = accelerationSensors[i]->dv()[j];
       }
     }
     {
       const DeviceList<ForceSensor>& forceSensors = robot->devices();
       for(int i=0; i < forceSensors.size(); i++){
-        for (int j=0; j<6; j++) s_shm->reaction_force[i][j] = forceSensors[i]->F()[j];
+        for (int j=0; j<6; j++) s_shm->reaction_force[forceSensors[i]->id()][j] = forceSensors[i]->F()[j];
       }
     }
   }
@@ -166,6 +166,19 @@ public:
   {
     robot = io->body();
     dt = io->timeStep();
+
+    const DeviceList<RateGyroSensor>& rateGyroSensors = robot->devices();
+    for(int i=0; i < rateGyroSensors.size(); i++){
+      io->enableInput(rateGyroSensors[i]);
+    }
+    const DeviceList<AccelerationSensor>& accelerationSensors = robot->devices();
+    for(int i=0; i < accelerationSensors.size(); i++){
+      io->enableInput(accelerationSensors[i]);
+    }
+    const DeviceList<ForceSensor>& forceSensors = robot->devices();
+    for(int i=0; i < forceSensors.size(); i++){
+      io->enableInput(forceSensors[i]);
+    }
 
     for(int i=0; i < robot->numJoints(); ++i){
       Link* joint = robot->joint(i);
