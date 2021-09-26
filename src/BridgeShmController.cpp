@@ -4,6 +4,7 @@
 #include <cnoid/ForceSensor>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 #include "../controller/system_shm.c"
 #include "../controller/myshm.h"
@@ -13,11 +14,14 @@ using namespace cnoid;
 
 class BridgeShmController : public SimpleController
 {
+  SimpleControllerIO* io;
   BodyPtr robot;
   double dt;
 
   std::vector<double> hardware_pgain;
   std::vector<double> hardware_dgain;
+  std::vector<double> hardware_tqpgain;
+  std::vector<double> hardware_tqdgain;
 
   std::vector<double> qrefprev;
   std::vector<double> qactprev;
@@ -25,12 +29,68 @@ class BridgeShmController : public SimpleController
   struct servo_shm *s_shm;
   unsigned long long frame_counter=0;
 
+  void readGainFile(const std::string& pdGainsSimFileName) {
+    hardware_pgain.resize(robot->numJoints(),0);
+    hardware_dgain.resize(robot->numJoints(),0);
+    hardware_tqpgain.resize(robot->numJoints(),0);
+    hardware_tqdgain.resize(robot->numJoints(),0);
+
+    std::ifstream gain;
+    gain.open(pdGainsSimFileName.c_str());
+
+    if (gain.is_open()) {
+      io->os() << "[BridgeShmController] Gain file [" << pdGainsSimFileName << "] opened" << std::endl;
+      double tmp;
+      int i = 0;
+      for (; i < robot->numJoints(); i++) {
+
+      retry:
+        {
+          std::string str;
+          if (std::getline(gain, str)) {
+            if (str.empty())   goto retry;
+            if (str[0] == '#') goto retry;
+
+            std::istringstream sstrm(str);
+            sstrm >> tmp;
+            hardware_pgain[i] = tmp;
+            if(sstrm.eof()) goto next;
+            sstrm >> tmp;
+            hardware_dgain[i] = tmp;
+            if(sstrm.eof()) goto next;
+            sstrm >> tmp;
+            hardware_tqpgain[i] = tmp;
+            if(sstrm.eof()) goto next;
+            sstrm >> tmp;
+            hardware_tqpgain[i] = tmp;
+          } else {
+            i--;
+            break;
+          }
+        }
+
+      next:
+        io->os() << "joint: " << i;
+        io->os() << ", P: " << hardware_pgain[i];
+        io->os() << ", D: " << hardware_dgain[i];
+        io->os() << ", tqP: " << hardware_tqpgain[i];
+        io->os() << ", tqD: " << hardware_tqdgain[i] << std::endl;
+      }
+      gain.close();
+      if (i != robot->numJoints()) {
+        io->os() << "\e[0;31m[BridgeShmController] Gain file [" << pdGainsSimFileName << "] does not contain gains for all joints\e[0m" << std::endl;
+      }
+    } else {
+      io->os() << "\e[0;31m[BridgeShmController] Gain file [" << pdGainsSimFileName << "] not opened\e[0m" << std::endl;
+    }
+  }
+
   void initialize_shm()
   {
-    std::cerr << "[BridgeShmController] set_shared_memory " << 5555 << std::endl;
+    io->os() << "[BridgeShmController] set_shared_memory " << 5555 << std::endl;
     s_shm = (struct servo_shm *)set_shared_memory(5555, sizeof(struct servo_shm));
     if (s_shm == NULL) {
-      std::cerr << "[BridgeShmController] set_shared_memory failed" << std::endl;
+      io->os() << "[BridgeShmController] set_shared_memory failed" << std::endl;
       exit(1);
     }
 
@@ -142,7 +202,7 @@ class BridgeShmController : public SimpleController
         switch(s_shm->controlmode[i]){
         case SERVOMODE_POSITION_TORQUE:
         case SERVOMODE_POSITION_FFTORQUE:
-          u = (qref - qact) * limited_pgain * hardware_pgain[i] + (dqref - dqact) * limited_dgain * hardware_dgain[i] + s_shm->ref_torque[i] * limited_torque_pgain;
+          u = (qref - qact) * limited_pgain * hardware_pgain[i] + (dqref - dqact) * limited_dgain * hardware_dgain[i] + s_shm->ref_torque[i] * limited_torque_pgain * hardware_tqpgain[i];
           break;
         case SERVOMODE_POSITION:
           u = (qref - qact) * limited_pgain * hardware_pgain[i] + (dqref - dqact) * limited_dgain * hardware_dgain[i];
@@ -162,8 +222,9 @@ class BridgeShmController : public SimpleController
 
 public:
 
-  virtual bool initialize(SimpleControllerIO* io) override
+  virtual bool initialize(SimpleControllerIO* io_) override
   {
+    io = io_;
     robot = io->body();
     dt = io->timeStep();
 
@@ -180,14 +241,26 @@ public:
       io->enableInput(forceSensors[i]);
     }
 
+    std::string pdgainsSimFileName;
+
+    std::vector<std::string> options = io->options();
+    for(size_t i=0;i<options.size();i++){
+      std::string option = "pdGainsSimFileName:";
+      if (options[i].size() >= option.size() &&
+          std::equal(std::begin(option), std::end(option), std::begin(options[i]))) {
+        pdgainsSimFileName = options[i].substr(option.size());
+        continue;
+      }
+    }
+
+    readGainFile(pdgainsSimFileName);
+
     for(int i=0; i < robot->numJoints(); ++i){
       Link* joint = robot->joint(i);
       joint->setActuationMode(Link::JOINT_TORQUE);
       io->enableIO(joint);
       qrefprev.push_back(joint->q());
       qactprev.push_back(joint->q());
-      hardware_pgain.push_back(5000);
-      hardware_dgain.push_back(100);
     }
 
     this->initialize_shm();

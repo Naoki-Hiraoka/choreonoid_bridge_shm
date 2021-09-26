@@ -55,6 +55,7 @@ items:
                 controller: "BridgeShmController"
                 reloading: true
                 inputLinkPositions: false
+                controllerOptions: "pdGainsSimFileName:@PROJECT_SOURCE_DIR@/sample/SampleRobot.PDgain.dat"
         - 
           id: 4
           name: "Floor"

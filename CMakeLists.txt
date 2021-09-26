@@ -41,3 +41,5 @@ set_target_properties(BridgeShmController PROPERTIES
 install(TARGETS BridgeShmController
   RUNTIME DESTINATION $${CHOREONOID_PLUGIN_DIR}/simplecontroller CONFIGURATIONS Release Debug RelWithDebInfo MinSizeRel
   LIBRARY DESTINATION ${CHOREONOID_PLUGIN_DIR}/simplecontroller CONFIGURATIONS Release Debug RelWithDebInfo MinSizeRel)
+
+configure_file(${PROJECT_SOURCE_DIR}/sample/sample.cnoid.in ${PROJECT_SOURCE_DIR}/sample/sample.cnoid @ONLY)
