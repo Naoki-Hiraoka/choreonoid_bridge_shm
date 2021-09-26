@@ -254,7 +254,8 @@ public:
     for(int i=0; i < robot->numJoints(); ++i){
       Link* joint = robot->joint(i);
       joint->setActuationMode(Link::JOINT_TORQUE);
-      io->enableIO(joint);
+      io->enableOutput(joint);
+      io->enableInput(joint, JOINT_DISPLACEMENT | JOINT_VELOCITY | JOINT_FORCE);
       qrefprev.push_back(joint->q());
       qactprev.push_back(joint->q());
     }
