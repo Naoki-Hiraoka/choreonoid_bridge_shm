@@ -61,7 +61,7 @@ class BridgeShmController : public SimpleController
             hardware_tqpgain[i] = tmp;
             if(sstrm.eof()) goto next;
             sstrm >> tmp;
-            hardware_tqpgain[i] = tmp;
+            hardware_tqdgain[i] = tmp;
           } else {
             i--;
             break;
