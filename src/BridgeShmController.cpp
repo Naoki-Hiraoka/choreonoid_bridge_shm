@@ -23,8 +23,6 @@ class BridgeShmController : public SimpleController
   std::vector<double> hardware_tqpgain;
   std::vector<double> hardware_tqdgain;
 
-  std::vector<double> qactprev;
-
   struct servo_shm *s_shm;
   unsigned long long frame_counter=0;
 
@@ -126,8 +124,9 @@ class BridgeShmController : public SimpleController
     for (int i = 0; i < robot->numJoints(); i++){
       s_shm->cur_angle[i] = robot->joint(i)->q();
       s_shm->abs_angle[i] = robot->joint(i)->q();
-      s_shm->cur_vel[i] = 0.0;
+      s_shm->cur_vel[i] = robot->joint(i)->dq();
       s_shm->cur_torque[i] = robot->joint(i)->u();
+      s_shm->motor_current[0][i] = robot->joint(i)->u();
       s_shm->motor_temp[0][i] = 0.0;
       s_shm->motor_outer_temp[0][i] = 0.0;
       s_shm->motor_output[0][i] = 0.0;
@@ -183,11 +182,11 @@ class BridgeShmController : public SimpleController
         s_shm->servo_on[i] = 0;
       }
 
-      double qref = (s_shm->loopback[i] == 1) ? s_shm->cur_angle[i] : s_shm->ref_angle[i];
-      double qact = joint->q();
       if ( s_shm->is_servo_on[i] == 1 && s_shm->loopback[i] == 0 ) {
-        double dqact = (qact - qactprev[i]) / dt;
+        double qref = (s_shm->loopback[i] == 1) ? s_shm->cur_angle[i] : s_shm->ref_angle[i];
         double dqref = s_shm->ref_vel[i];
+        double qact = joint->q();
+        double dqact = joint->dq();
         float limited_pgain = (s_shm->pgain[i] < 0.0) ? 0.0 : s_shm->pgain[i];
         float limited_dgain = (s_shm->dgain[i] < 0.0) ? 0.0 : s_shm->dgain[i];
         float limited_torque_pgain = (s_shm->torque_pgain[i] < 0.0) ? 0.0 : s_shm->torque_pgain[i];
@@ -208,11 +207,6 @@ class BridgeShmController : public SimpleController
       } else {
         joint->u() = 0;
       }
-
-      s_shm->cur_torque[i] = robot->joint(i)->u();
-      s_shm->motor_current[0][i] = robot->joint(i)->u();
-
-      qactprev[i] = qact;
     }
   }
 
@@ -256,7 +250,6 @@ public:
       joint->setActuationMode(Link::JOINT_TORQUE);
       io->enableOutput(joint);
       io->enableInput(joint, JOINT_DISPLACEMENT | JOINT_VELOCITY);
-      qactprev.push_back(joint->q());
     }
 
     this->initialize_shm();
