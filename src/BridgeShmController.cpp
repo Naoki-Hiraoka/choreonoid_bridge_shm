@@ -78,10 +78,10 @@ class BridgeShmController : public SimpleController
     }
   }
 
-  void initialize_shm()
+  void initialize_shm(int shm_key)
   {
-    io->os() << "[BridgeShmController] set_shared_memory " << 5555 << std::endl;
-    s_shm = (struct servo_shm *)set_shared_memory(5555, sizeof(struct servo_shm));
+    io->os() << "[BridgeShmController] set_shared_memory " << shm_key << std::endl;
+    s_shm = (struct servo_shm *)set_shared_memory(shm_key, sizeof(struct servo_shm));
     if (s_shm == NULL) {
       io->os() << "[BridgeShmController] set_shared_memory failed" << std::endl;
       exit(1);
@@ -232,6 +232,7 @@ public:
     }
 
     std::string pdgainsSimFileName;
+    int shm_key = 5555;
 
     std::vector<std::string> options = io->options();
     for(size_t i=0;i<options.size();i++){
@@ -239,6 +240,12 @@ public:
       if (options[i].size() >= option.size() &&
           std::equal(std::begin(option), std::end(option), std::begin(options[i]))) {
         pdgainsSimFileName = options[i].substr(option.size());
+        continue;
+      }
+      option = "shm_key:";
+      if (options[i].size() >= option.size() &&
+          std::equal(std::begin(option), std::end(option), std::begin(options[i]))) {
+        shm_key = std::stoi(options[i].substr(option.size()));
         continue;
       }
     }
@@ -252,7 +259,7 @@ public:
       io->enableInput(joint, JOINT_DISPLACEMENT | JOINT_VELOCITY);
     }
 
-    this->initialize_shm();
+    this->initialize_shm(shm_key);
     return true;
   }
 
