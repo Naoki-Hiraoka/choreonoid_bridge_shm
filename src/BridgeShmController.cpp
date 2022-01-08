@@ -145,19 +145,19 @@ class BridgeShmController : public SimpleController
     }
     {
       const DeviceList<RateGyroSensor>& rateGyroSensors = robot->devices();
-      for(int i=0; i < rateGyroSensors.size(); i++){
+      for(int i=0; i < rateGyroSensors.size() && i < MAX_IMU_NUM/* defined in servo_shm.h */; i++){
         for (int j=0; j<3; j++) s_shm->body_omega[rateGyroSensors[i]->id()][j] = rateGyroSensors[i]->w()[j];
       }
     }
     {
       const DeviceList<AccelerationSensor>& accelerationSensors = robot->devices();
-      for(int i=0; i < accelerationSensors.size(); i++){
+      for(int i=0; i < accelerationSensors.size() && i < MAX_IMU_NUM/* defined in servo_shm.h */; i++){
         for (int j=0; j<3; j++) s_shm->body_acc[accelerationSensors[i]->id()][j] = accelerationSensors[i]->dv()[j];
       }
     }
     {
       const DeviceList<ForceSensor>& forceSensors = robot->devices();
-      for(int i=0; i < forceSensors.size(); i++){
+      for(int i=0; i < forceSensors.size() && i < MAX_FSENSOR_NUM/* defined in servo_shm.h */ ; i++){
         for (int j=0; j<6; j++) s_shm->reaction_force[forceSensors[i]->id()][j] = forceSensors[i]->F()[j];
       }
     }
