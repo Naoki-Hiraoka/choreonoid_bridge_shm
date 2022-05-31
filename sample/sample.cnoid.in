@@ -51,7 +51,7 @@ items:
               plugin: SimpleController
               class: SimpleControllerItem
               data: 
-                isNoDelayMode: false
+                isNoDelayMode: true # 制御が1周期遅れるかどうか. ゲインが高いときは、trueにしないと発散する
                 controller: "BridgeShmController"
                 reloading: true
                 inputLinkPositions: false
@@ -86,6 +86,7 @@ items:
           data: 
             realtimeSync: true
             recording: "full"
+            controllerThreads: false # choreonoid1.7では、falseにしないとControllerItemのisNoDelayMode: trueが無効になる
 views: 
   "Items": 
     selected: [  ]
