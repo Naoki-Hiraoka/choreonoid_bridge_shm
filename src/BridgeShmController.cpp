@@ -136,7 +136,7 @@ class BridgeShmController : public SimpleController
       s_shm->h817_rx_error0[0][i] = 0.0;
       s_shm->h817_rx_error1[0][i] = 0.0;
 
-      s_shm->hole_status[0][i] = 0x01;// &0x07==0, &0x07 == 7, &0x10==0だとOFF扱いらしい
+      s_shm->hole_status[0][i] = 0x11;// &0x07==0, &0x07 == 7, &0x10==0だとOFF扱いらしい
 
       s_shm->torque_coef_current[i] = 0.0;
       s_shm->torque_coef_inertia[i] = 0.0;
