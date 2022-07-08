@@ -239,7 +239,7 @@ public:
 
     std::string pdgainsSimFileName;
     int shm_key = 5555;
-    bool servoOff;
+    bool servoOff = false;
 
     std::vector<std::string> options = io->options();
     for(size_t i=0;i<options.size();i++){
@@ -278,7 +278,7 @@ public:
       io->enableInput(joint, JOINT_DISPLACEMENT | JOINT_VELOCITY);
     }
 
-    this->initialize_shm(shm_key);
+    this->initialize_shm(shm_key, servoOff);
     return true;
   }
 
