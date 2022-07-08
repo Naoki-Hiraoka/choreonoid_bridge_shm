@@ -78,7 +78,7 @@ class BridgeShmController : public SimpleController
     }
   }
 
-  void initialize_shm(int shm_key)
+  void initialize_shm(int shm_key, bool servoOff = false)
   {
     io->os() << "[BridgeShmController] set_shared_memory " << shm_key << std::endl;
     s_shm = (struct servo_shm *)set_shared_memory(shm_key, sizeof(struct servo_shm));
@@ -105,14 +105,20 @@ class BridgeShmController : public SimpleController
       }
       s_shm->motor_num[i] = 1;
       s_shm->controlmode[i] = SERVOMODE_POSITION;
-      s_shm->is_servo_on[i] = 0; // 1: servoon start. 0: servooff start.
       s_shm->servo_on[i] = 0;
       s_shm->servo_off[i] = 0;
       s_shm->torque0[i] = 0;
-      s_shm->servo_state[0][i] = 0x0800; //0x0000: servoon start. 0x0800: servooff start
-      s_shm->loopback[i] = 1; // 0: servoon start. 1: servooff start.
       s_shm->joint_enable[i] = 1;
       s_shm->joint_offset[i] = 0;
+      if (servoOff) {
+        s_shm->is_servo_on[i] = 0;
+        s_shm->servo_state[0][i] = 0x0800;
+        s_shm->loopback[i] = 1;
+      } else {
+        s_shm->is_servo_on[i] = 1;
+        s_shm->servo_state[0][i] = 0x0000;
+        s_shm->loopback[i] = 0;
+      }
     }
   }
 
@@ -233,6 +239,7 @@ public:
 
     std::string pdgainsSimFileName;
     int shm_key = 5555;
+    bool servoOff;
 
     std::vector<std::string> options = io->options();
     for(size_t i=0;i<options.size();i++){
@@ -246,6 +253,18 @@ public:
       if (options[i].size() >= option.size() &&
           std::equal(std::begin(option), std::end(option), std::begin(options[i]))) {
         shm_key = std::stoi(options[i].substr(option.size()));
+        continue;
+      }
+      option = "servoOff:";
+      if (options[i].size() >= option.size() &&
+          std::equal(std::begin(option), std::end(option), std::begin(options[i]))) {
+        std::string value = options[i].substr(option.size());
+        if (value == "True" ||
+            value == "true" ||
+            value == "TRUE" ||
+            value == "1") {
+          servoOff = true;
+        }
         continue;
       }
     }
