@@ -17,20 +17,12 @@ include_directories(
   ${trans_vm_SOURCE_PREFIX}/include
   )
 
-# 相対パスを絶対パスに直す
-set(CHOREONOID_BODY_LIBRARIES_ABS)
-foreach(lib ${CHOREONOID_BODY_LIBRARIES})
-  find_library(${lib}_abs NAMES ${lib} PATHS ${CHOREONOID_LIBRARY_DIRS})
-  set(CHOREONOID_BODY_LIBRARIES_ABS ${CHOREONOID_BODY_LIBRARIES_ABS} ${${lib}_abs})
-endforeach(lib)
-
-
 # add_cnoid_simple_controllerを使いたいが、パスがうまく解決できない
 add_library(BridgeShmController SHARED src/BridgeShmController.cpp)
 
 target_link_libraries(BridgeShmController
   ${catkin_LIBRARIES}
-  ${CHOREONOID_BODY_LIBRARIES_ABS}
+  ${CHOREONOID_BODY_PLUGIN_LIBRARIES}
   )
 
 set_target_properties(BridgeShmController PROPERTIES
