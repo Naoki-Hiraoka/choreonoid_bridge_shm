@@ -17,6 +17,10 @@ include_directories(
   ${trans_vm_SOURCE_PREFIX}/include
   )
 
+link_directories(
+  ${CHOREONOID_LIBRARY_DIRS}
+  )
+
 # add_cnoid_simple_controllerを使いたいが、パスがうまく解決できない
 add_library(BridgeShmController SHARED src/BridgeShmController.cpp)
 
