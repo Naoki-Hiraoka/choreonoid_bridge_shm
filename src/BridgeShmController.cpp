@@ -22,6 +22,7 @@ class BridgeShmController : public SimpleController
   std::vector<double> hardware_dgain;
   std::vector<double> hardware_tqpgain;
   std::vector<double> hardware_tqdgain;
+  std::vector<double> hardware_viscosity;
 
   struct servo_shm *s_shm;
   unsigned long long frame_counter=0;
@@ -75,6 +76,48 @@ class BridgeShmController : public SimpleController
       }
     } else {
       io->os() << "\e[0;31m[BridgeShmController] Gain file [" << pdGainsSimFileName << "] not opened\e[0m" << std::endl;
+    }
+  }
+
+  void readFrictionFile(const std::string& frictionsSimFileName) {
+    hardware_viscosity.resize(robot->numJoints(),0);
+
+    if(frictionsSimFileName == "") return;
+
+    std::ifstream gain;
+    gain.open(frictionsSimFileName.c_str());
+
+    if (gain.is_open()) {
+      io->os() << "[BridgeShmController] Friction file [" << frictionsSimFileName << "] opened" << std::endl;
+      double tmp;
+      int i = 0;
+      for (; i < robot->numJoints(); i++) {
+
+      retry:
+        {
+          std::string str;
+          if (std::getline(gain, str)) {
+            if (str.empty())   goto retry;
+            if (str[0] == '#') goto retry;
+
+            std::istringstream sstrm(str);
+            sstrm >> tmp;
+            hardware_viscosity[i] = tmp;
+          } else {
+            i--;
+            break;
+          }
+        }
+
+      next:
+        io->os() << "joint: " << i << ", viscosity: " << hardware_viscosity[i] << std::endl;
+      }
+      gain.close();
+      if (i != robot->numJoints()) {
+        io->os() << "\e[0;31m[BridgeShmController] Friction file [" << frictionsSimFileName << "] does not contain gains for all joints\e[0m" << std::endl;
+      }
+    } else {
+      io->os() << "\e[0;31m[BridgeShmController] Friction file [" << frictionsSimFileName << "] not opened\e[0m" << std::endl;
     }
   }
 
@@ -188,6 +231,7 @@ class BridgeShmController : public SimpleController
         s_shm->servo_on[i] = 0;
       }
 
+      double u = 0.0;
       if ( s_shm->is_servo_on[i] == 1 && s_shm->loopback[i] == 0 ) {
         double qref = (s_shm->loopback[i] == 1) ? s_shm->cur_angle[i] : s_shm->ref_angle[i];
         double dqref = s_shm->ref_vel[i];
@@ -197,22 +241,20 @@ class BridgeShmController : public SimpleController
         float limited_dgain = (s_shm->dgain[i] < 0.0) ? 0.0 : s_shm->dgain[i];
         float limited_torque_pgain = (s_shm->torque_pgain[i] < 0.0) ? 0.0 : s_shm->torque_pgain[i];
         float limited_torque_dgain = (s_shm->torque_dgain[i] < 0.0) ? 0.0 : s_shm->torque_dgain[i];
-        double u=0;
         switch(s_shm->controlmode[i]){
         case SERVOMODE_POSITION_TORQUE:
         case SERVOMODE_POSITION_FFTORQUE:
-          u = (qref - qact) * limited_pgain * hardware_pgain[i] + (dqref - dqact) * limited_dgain * hardware_dgain[i] + s_shm->ref_torque[i] * limited_torque_pgain * hardware_tqpgain[i];
+          u += (qref - qact) * limited_pgain * hardware_pgain[i] + (dqref - dqact) * limited_dgain * hardware_dgain[i] + s_shm->ref_torque[i] * limited_torque_pgain * hardware_tqpgain[i];
           break;
         case SERVOMODE_POSITION:
-          u = (qref - qact) * limited_pgain * hardware_pgain[i] + (dqref - dqact) * limited_dgain * hardware_dgain[i];
+          u += (qref - qact) * limited_pgain * hardware_pgain[i] + (dqref - dqact) * limited_dgain * hardware_dgain[i];
           break;
         default:
           break;
         }
-        joint->u() = u;
-      } else {
-        joint->u() = 0;
       }
+      u += - joint->dq() * hardware_viscosity[i];
+      joint->u() = u;
     }
   }
 
@@ -237,7 +279,7 @@ public:
       io->enableInput(forceSensors[i]);
     }
 
-    std::string pdgainsSimFileName;
+    std::string pdgainsSimFileName, frictionsSimFileName;
     int shm_key = 5555;
     bool servoOff = false;
 
@@ -247,6 +289,12 @@ public:
       if (options[i].size() >= option.size() &&
           std::equal(std::begin(option), std::end(option), std::begin(options[i]))) {
         pdgainsSimFileName = options[i].substr(option.size());
+        continue;
+      }
+      option = "frictionsSimFileName:";
+      if (options[i].size() >= option.size() &&
+          std::equal(std::begin(option), std::end(option), std::begin(options[i]))) {
+        frictionsSimFileName = options[i].substr(option.size());
         continue;
       }
       option = "shm_key:";
@@ -270,6 +318,7 @@ public:
     }
 
     readGainFile(pdgainsSimFileName);
+    readFrictionFile(frictionsSimFileName);
 
     for(int i=0; i < robot->numJoints(); ++i){
       Link* joint = robot->joint(i);
