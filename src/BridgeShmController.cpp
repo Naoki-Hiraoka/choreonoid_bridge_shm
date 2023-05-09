@@ -147,7 +147,7 @@ class BridgeShmController : public SimpleController
         s_shm->subgain[i][j] = 0.0;
       }
       s_shm->motor_num[i] = 1;
-      s_shm->controlmode[i] = SERVOMODE_POSITION;
+      s_shm->controlmode[i] = SERVOMODE_POSITION_FFTORQUE;
       s_shm->servo_on[i] = 0;
       s_shm->servo_off[i] = 0;
       s_shm->torque0[i] = 0;
