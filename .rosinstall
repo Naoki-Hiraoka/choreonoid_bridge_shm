@@ -1,4 +1,8 @@
 - git:
     local-name: choreonoid
     uri: https://github.com/choreonoid/choreonoid.git
-    version: release-1.7
+    version: release-1.7 # release-2.1 でも可
+# for servo_shm.h in trans_vm
+- git:
+    local-name: jsk-ros-pkg/trans_system
+    uri: https://github.com/jsk-ros-pkg/trans_system.git
